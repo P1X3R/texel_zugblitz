@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+checkpoints/
+dataset
+dataset*
+*.png
+train.npz
+val.npz
+psqt_weights.h
