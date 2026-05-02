@@ -41,7 +41,23 @@ This project implements a **modernized Texel tuning pipeline**:
 * **Smooth Constraints**
   A soft penalty prevents PSQT values from drifting too far from reasonable ranges (and look better on the heatmap).
 
-* **Use sigmod function instead of **
+* **Use base `e` for sigmoid function**  
+  Inspired by Ethereal's tuning method, this training uses a sigmoid with base `e`, letting the constant `K` absorb the `1/400` term from the original formula.
+
+  Peter Österlund's formula:
+
+  ```
+  sigmoid = 1 / (1 + 10^(-K * E / 400))
+  ```
+
+  Modified (Ethereal-style):
+
+  ```
+  sigmoid = 1 / (1 + e^(-K * E))
+  ```
+
+> [!NOTE]
+> Here E is an evaluation, and K is a coefficient computed to minimize an error function. 
 
 ---
 
@@ -111,13 +127,14 @@ The evaluation function:
 * Blends them using a **phase function**
 * Converts evaluation -> probability via:
 
-[
-P(\text{win}) = \sigma(K \cdot \text{eval})
-]
+```
+P(win) = sigma(K * E)
+```
 
 Where:
 
 * `K` is learned during training
+* `E` is the model's evaluation in Centipawns (CP)
 
 ---
 
