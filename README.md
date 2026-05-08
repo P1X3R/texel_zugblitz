@@ -36,13 +36,13 @@ This project implements a **modernized Texel tuning pipeline**:
   A trainable parameter `K` converts centipawn evaluations into win/draw/loss probabilities.
 
 * **Material Anchoring**
-  PSQTs are regularized to stay consistent with base material values (avoid values to explode in one direction and finding out a pawn at e4 is worth 7000 cp).
+  PSQTs are regularized to stay consistent with base material values (avoid values to explode in one direction, e.g finding out a pawn at e4 is worth 7000 cp).
 
 * **Smooth Constraints**
   A soft penalty prevents PSQT values from drifting too far from reasonable ranges (and look better on the heatmap).
 
 * **Use base `e` for sigmoid function**  
-  Inspired by Ethereal's tuning method, this training uses a sigmoid with base `e`, letting the constant `K` absorb the `1/400` term from the original formula.
+  Inspired by Ethereal's tuning method, this training uses a sigmoid with base `e`, letting the constant `K` absorb the `-1/400` term from the original formula.
 
   Peter Österlund's formula:
 
@@ -53,7 +53,7 @@ This project implements a **modernized Texel tuning pipeline**:
   Modified (Ethereal-style):
 
   ```
-  sigmoid = 1 / (1 + e^(-K * E))
+  sigmoid = 1 / (1 + e^(K * E))
   ```
 
 > [!NOTE]
@@ -66,7 +66,7 @@ This project implements a **modernized Texel tuning pipeline**:
 ### 1. Dataset Creation (EPD -> NPZ)
 
 ```bash
-python process_epd.py
+python process_dataset.py
 ```
 
 * Parses EPD positions (from Zurichess dataset)
@@ -86,7 +86,7 @@ python process_epd.py
 ### 2. Padding & Chunking (NPZ -> PT)
 
 ```bash
-python pad_dataset.py
+python pad.py
 ```
 
 * Converts variable-length positions into fixed-size tensors
@@ -102,7 +102,7 @@ python pad_dataset.py
 ### 3. Training
 
 ```bash
-python train.py
+python main.py
 ```
 
 * Loads full dataset into memory
@@ -119,16 +119,27 @@ python train.py
 
 ---
 
+### 4. Baking
+
+```bash
+python bake.py
+```
+* Writes the model parameters into a C array (6 pieces * 64 squares) where `0 = A1` and `63 = H8`.
+* Uses the custom `score_t` structure to encode MG and EG score.
+* Set the checkpoint to be baked by updating `CHECKPOINT_PATH`.
+
+---
+
 ## Model
 
 The evaluation function:
 
 * Computes MG and EG scores from PSQTs
-* Blends them using a **phase function**
-* Converts evaluation -> probability via:
+* Blends them using a **phase function** (calculates the current stage of the game)
+* Converts evaluation -> whites winning probability via:
 
 ```
-P(win) = sigma(K * E)
+P(win) = sigomid(-K * E)
 ```
 
 Where:
@@ -148,7 +159,7 @@ Where:
 
 ### Core steps
 
-1. Index PSQT tables
+1. Index PSQT tables (in centipawns)
 2. Apply color symmetry (flip for black)
 3. Compute MG / EG scores
 4. Compute phase
@@ -176,24 +187,28 @@ Soft constraint preventing extreme square values using a smooth penalty.
 * Batch training (PyTorch)
 * Checkpointing per epoch
 * Resume support
-* Validation tracking
+* Logging
 * Early stopping
 
 ---
 
 ## Why this exists
 
-Traditional Texel tuning is often:
+Traditional Texel tuning (Peter Österlund's original idea) is often:
 
-* minimally structured
-* hard to scale
-* loosely constrained
+* Minimalist
+* Slow due to local search limitations
+* Non-viable for a large number of parameters
 
-This project explores a more **systematic and extensible approach**:
+This project uses **modern tools** like PyTorch and Python to **boost the performance of the Texel tuning method.** This potentially allows for:
 
-* explicit data pipeline
-* differentiable constraints
-* learnable evaluation scaling
+* A higher parameter count.
+* Better utilization of modern hardware, such as GPUs.
+* Drastically faster convergence to a local optimum.
+* The use of larger datasets due to the increase in performance.
+
+> [!NOTE]
+> This project is currently used only for PSQTs (Piece-Square Tables) and utilizes the Zurichess dataset (a classic benchmark dataset) due to computational constraints.
 
 ---
 
@@ -201,11 +216,13 @@ This project explores a more **systematic and extensible approach**:
 
 ```
 .
-├── process_epd.py        # EPD -> NPZ dataset
-├── pad_dataset.py        # NPZ -> padded PT chunks
-├── train.py              # Training loop
-├── dataset_pad/          # Processed dataset
-├── checkpoints/          # Saved models
+├── process_dataset.py # EPD -> NPZ dataset
+├── pad.py             # NPZ -> padded PT chunks
+├── main.py            # Training loop
+├── bake.py            # Model -> C Array
+├── heatmap.py         # Model visualizer tool
+├── dataset_pad/       # Processed dataset
+├── checkpoints/       # Saved models (PSQTs)
 ```
 
 ---
@@ -213,20 +230,20 @@ This project explores a more **systematic and extensible approach**:
 ## Notes
 
 * Entire dataset is loaded into RAM during training
-* Designed for experimentation, not production deployment even though Zugblitz's uses it.
+* Just an experiment, not meant for production deployment even though Zugblitz uses it.
 * Assumes reasonably clean EPD input (look at Zurichess's format)
 * Dataset padding could be done directly on EPD processing
 
 ---
 
-## Origin Story
+## Origin Story 
 
-This was supposed to be a simple vibe coded Texel tuning script.
+This was supposed to be a simple, vibe-coded Texel tuning script.
 
 It wasn’t.
 
-The code written by the was painfully slow and most of the time didn't even work. Therefore, I had to get my hands dirty with my little knowledge of Python and even less about PyTorch and Numpy I made this succeed. If you noticed the dataset padding could be done directly on EPD, this esign choice was taken precisely due to incorrect use of AI to "speed-up the development process" although it works effectively and remains stable. 
+The code written by the AI was painfully slow and, most of the time, didn't even work. Therefore, I had to get my hands dirty. With my limited knowledge of Python and even less of PyTorch and NumPy, I made it thrive. If you noticed that the dataset padding could have been done directly on the EPD, this design choice was taken precisely due to the incorrect use of AI to "speed up the development process." However, it works effectively and remains stable.
 
-Tuning speed is surprising, converging on a local minimum within roughly 2 hours on an Intel Pentium Silver N5030 in comparison to the 6 hours it takes to CPW's tuning method on a 16-core Dell T620 computer. A completely expected effect but not at that scale.
+Tuning speed is surprising, converging on a local minimum within roughly 2 hours on an Intel Pentium Silver N5030, compared to the 6 hours it takes using CPW's tuning method on a 16-core Dell T620. This was an expected effect, but not at such a significant scale.
 
-This side-project is more an experiment on machine learning and correct AI use to actually speed-up the development process, learning that it's not an engineering and critical thinking replacement, but a reasoning copilot.
+This side project is more an experiment in machine learning and the correct use of AI to actually accelerate development. I’ve learned that it is not a replacement for engineering and critical thinking, but rather a reasoning copilot.
