@@ -1,7 +1,7 @@
 [project]
 name = "train-eval"
 version = "0.1.0"
-description = "Add your description here"
+description = "A full Texel-tuning method pipeline for the Zugblitz chess engine"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
