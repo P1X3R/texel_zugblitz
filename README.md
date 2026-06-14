@@ -139,7 +139,7 @@ The evaluation function:
 * Converts evaluation -> whites winning probability via:
 
 ```
-P(win) = sigomid(-K * E)
+P(win) = sigmoid(-K * E)
 ```
 
 Where:
