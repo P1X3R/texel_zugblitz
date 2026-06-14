@@ -53,7 +53,7 @@ This project implements a **modernized Texel tuning pipeline**:
   Modified (Ethereal-style):
 
   ```
-  sigmoid = 1 / (1 + e^(K * E))
+  sigmoid = 1 / (1 + e^(-K * E))
   ```
 
 > [!NOTE]
@@ -139,7 +139,7 @@ The evaluation function:
 * Converts evaluation -> whites winning probability via:
 
 ```
-P(win) = sigmoid(-K * E)
+P(win) = sigmoid(K * E)
 ```
 
 Where:
@@ -242,7 +242,7 @@ This was supposed to be a simple, vibe-coded Texel tuning script.
 
 It wasn’t.
 
-The code written by the AI was painfully slow and, most of the time, didn't even work. Therefore, I had to get my hands dirty. With my limited knowledge of Python and even less of PyTorch and NumPy, I made it thrive. If you noticed that the dataset padding could have been done directly on the EPD, this design choice was taken precisely due to the incorrect use of AI to "speed up the development process." However, it works effectively and remains stable.
+The code written by the AI was painfully slow and, most of the time, didn't even work. Therefore, I had to get my hands dirty. With my limited knowledge of Python and even less of PyTorch and NumPy, I somehow made it work. If you noticed that the dataset padding could have been done directly on the EPD, this design choice was taken precisely due to the incorrect use of AI to "speed up the development process." However, it works effectively and remains stable.
 
 Tuning speed is surprising, converging on a local minimum within roughly 2 hours on an Intel Pentium Silver N5030, compared to the 6 hours it takes using CPW's tuning method on a 16-core Dell T620. This was an expected effect, but not at such a significant scale.
 
