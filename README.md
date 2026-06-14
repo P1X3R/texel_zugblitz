@@ -36,12 +36,12 @@ This project implements a **modernized Texel tuning pipeline**:
   A trainable parameter `K` converts centipawn evaluations into win/draw/loss probabilities.
 
 * **Material Anchoring**
-  PSQTs are regularized to stay consistent with base material values (avoid values to explode in one direction, e.g finding out a pawn at e4 is worth 7000 cp).
+  PSQTs are regularized to stay consistent with base material values (avoiding values exploding in one direction, e.g., finding out a pawn at e4 is worth 7000 cp).
 
 * **Smooth Constraints**
-  A soft penalty prevents PSQT values from drifting too far from reasonable ranges (and look better on the heatmap).
+  A soft penalty prevents PSQT values from drifting too far from reasonable ranges (and makes them look better on the heatmap).
 
-* **Use base `e` for sigmoid function**  
+* **Use base `e` for sigmoid function**
   Inspired by Ethereal's tuning method, this training uses a sigmoid with base `e`, letting the constant `K` absorb the `-1/400` term from the original formula.
 
   Peter Österlund's formula:
@@ -57,7 +57,7 @@ This project implements a **modernized Texel tuning pipeline**:
   ```
 
 > [!NOTE]
-> Here E is an evaluation, and K is a coefficient computed to minimize an error function. 
+> Here, E is an evaluation, and K is a coefficient computed to minimize an error function.
 
 ---
 
@@ -69,7 +69,7 @@ This project implements a **modernized Texel tuning pipeline**:
 python process_dataset.py
 ```
 
-* Parses EPD positions (from Zurichess dataset)
+* Parses EPD positions (from the Zurichess dataset)
 * Extracts:
 
   * pieces
@@ -106,9 +106,9 @@ python main.py
 ```
 
 * Loads full dataset into memory
-* Trains PSQT model using:
+* Trains the PSQT model using:
 
-  * MSE loss vs WDL targets
+  * MSE loss vs. WDL targets
   * material consistency regularization
   * PSQT deviation penalty
 * Uses:
@@ -124,8 +124,9 @@ python main.py
 ```bash
 python bake.py
 ```
+
 * Writes the model parameters into a C array (6 pieces * 64 squares) where `0 = A1` and `63 = H8`.
-* Uses the custom `score_t` structure to encode MG and EG score.
+* Uses the custom `score_t` structure to encode MG and EG scores.
 * Set the checkpoint to be baked by updating `CHECKPOINT_PATH`.
 
 ---
@@ -136,7 +137,7 @@ The evaluation function:
 
 * Computes MG and EG scores from PSQTs
 * Blends them using a **phase function** (calculates the current stage of the game)
-* Converts evaluation -> whites winning probability via:
+* Converts evaluation -> White's winning probability via:
 
 ```
 P(win) = sigmoid(K * E)
@@ -174,7 +175,7 @@ To stabilize training:
 
 ### Material Consistency Loss
 
-Keeps average PSQT values aligned with base material.
+Keeps average PSQT values aligned with base material values.
 
 ### PSQT Deviation Loss
 
@@ -202,10 +203,10 @@ Traditional Texel tuning (Peter Österlund's original idea) is often:
 
 This project uses **modern tools** like PyTorch and Python to **boost the performance of the Texel tuning method.** This potentially allows for:
 
-* A higher parameter count.
-* Better utilization of modern hardware, such as GPUs.
-* Drastically faster convergence to a local optimum.
-* The use of larger datasets due to the increase in performance.
+* A higher parameter count
+* Better utilization of modern hardware, such as GPUs
+* Drastically faster convergence to a local optimum
+* The use of larger datasets due to the increase in performance
 
 > [!NOTE]
 > This project is currently used only for PSQTs (Piece-Square Tables) and utilizes the Zurichess dataset (a classic benchmark dataset) due to computational constraints.
@@ -219,7 +220,7 @@ This project uses **modern tools** like PyTorch and Python to **boost the perfor
 ├── process_dataset.py # EPD -> NPZ dataset
 ├── pad.py             # NPZ -> padded PT chunks
 ├── main.py            # Training loop
-├── bake.py            # Model -> C Array
+├── bake.py            # Model -> C array
 ├── heatmap.py         # Model visualizer tool
 ├── dataset_pad/       # Processed dataset
 ├── checkpoints/       # Saved models (PSQTs)
@@ -230,20 +231,20 @@ This project uses **modern tools** like PyTorch and Python to **boost the perfor
 ## Notes
 
 * Entire dataset is loaded into RAM during training
-* Just an experiment, not meant for production deployment even though Zugblitz uses it.
+* Just an experiment, not meant for production deployment even though Zugblitz uses it
 * Assumes reasonably clean EPD input (look at Zurichess's format)
-* Dataset padding could be done directly on EPD processing
+* Dataset padding could be done directly during EPD processing
 
 ---
 
-## Origin Story 
+## Origin Story
 
 This was supposed to be a simple, vibe-coded Texel tuning script.
 
 It wasn’t.
 
-The code written by the AI was painfully slow and, most of the time, didn't even work. Therefore, I had to get my hands dirty. With my limited knowledge of Python and even less of PyTorch and NumPy, I somehow made it work. If you noticed that the dataset padding could have been done directly on the EPD, this design choice was taken precisely due to the incorrect use of AI to "speed up the development process." However, it works effectively and remains stable.
+The code written by the AI was painfully slow and, most of the time, didn't even work. Therefore, I had to get my hands dirty. With my limited knowledge of Python and even less of PyTorch and NumPy, I somehow made it work. If you noticed that the dataset padding could have been done directly on the EPD, this design choice was made precisely due to the incorrect use of AI to "speed up the development process." However, it works effectively and remains stable.
 
 Tuning speed is surprising, converging on a local minimum within roughly 2 hours on an Intel Pentium Silver N5030, compared to the 6 hours it takes using CPW's tuning method on a 16-core Dell T620. This was an expected effect, but not at such a significant scale.
 
-This side project is more an experiment in machine learning and the correct use of AI to actually accelerate development. I’ve learned that it is not a replacement for engineering and critical thinking, but rather a reasoning copilot.
+This side project is more of an experiment in machine learning and the correct use of AI to actually accelerate development. I’ve learned that it is not a replacement for engineering and critical thinking, but rather a reasoning copilot.
